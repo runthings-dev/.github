@@ -28,16 +28,6 @@ jobs:
             echo "SLUG=${{ github.event.repository.name }}" >> "$GITHUB_ENV"
           fi
 
-      - name: Validate build dir
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          if [ ! -d "${{ inputs.build_dir }}" ]; then
-            echo "BUILD_DIR does not exist: ${{ inputs.build_dir }}" >&2
-            exit 1
-          fi
-
       - name: Deploy to WP.org SVN (10up)
         uses: 10up/action-wordpress-plugin-deploy@stable
         env:
