@@ -6,10 +6,6 @@ on:
       plugin_slug:
         type: string
         required: false
-      build_dir:
-        type: string
-        required: false
-        default: "."
     secrets:
       WPORG_USERNAME:
         required: true
@@ -48,4 +44,3 @@ jobs:
           SVN_USERNAME: ${{ secrets.WPORG_USERNAME }}
           SVN_PASSWORD: ${{ secrets.WPORG_PASSWORD }}
           SLUG: ${{ env.SLUG }}
-          BUILD_DIR: ${{ inputs.build_dir }}
