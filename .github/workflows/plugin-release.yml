@@ -36,11 +36,6 @@ jobs:
         run: |
           set -euo pipefail
 
-          TAG="${GITHUB_REF_NAME}"                 # e.g. v1.2.3
-          PREFIX="${{ inputs.tag_prefix }}"
-          VER="${TAG#${PREFIX}}"                   # e.g. 1.2.3
-
-          README_PATH="${{ inputs.readme_path }}"
           if [ ! -f "$README_PATH" ]; then
             echo "Missing file: ${README_PATH}" >&2
             exit 1
@@ -49,9 +44,14 @@ jobs:
           python - <<'PY'
           import os, re, sys, pathlib
 
-          ver = os.environ["VER"]
+          tag = os.environ["VER"]
+          prefix = os.environ.get("TAG_PREFIX", "v")
+          ver = tag[len(prefix):] if tag.startswith(prefix) else tag
           readme_path = pathlib.Path(os.environ["README_PATH"])
           heading_re = os.environ["HEADING_RE"].replace("{VERSION}", re.escape(ver))
+
+          print(f"Tag: {tag}, Prefix: {prefix}, Version: {ver}")
+          print(f"Heading regex: {heading_re}")
 
           text = readme_path.read_text(encoding="utf-8")
 
@@ -60,10 +60,14 @@ jobs:
           m = pat.search(text)
 
           if not m:
-            print(f"Could not find changelog section for version {ver} in {readme_path}", file=sys.stderr)
+            print(f"ERROR: Could not find changelog section for version {ver} in {readme_path}", file=sys.stderr)
+            print(f"Pattern used: {pat.pattern}", file=sys.stderr)
             sys.exit(1)
 
           notes = m.group(1).strip()
+          if not notes:
+            print(f"WARNING: Matched heading but content is empty", file=sys.stderr)
+
           out = pathlib.Path("release-notes.md")
           out.write_text(notes + "\n", encoding="utf-8")
           print(f"Wrote {out} ({len(notes)} chars)")
@@ -72,6 +76,7 @@ jobs:
           VER: ${{ github.ref_name }}
           README_PATH: ${{ inputs.readme_path }}
           HEADING_RE: ${{ inputs.version_heading_regex }}
+          TAG_PREFIX: ${{ inputs.tag_prefix }}
 
       - name: Resolve plugin slug
         run: |
