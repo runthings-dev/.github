@@ -1,0 +1,51 @@
+name: WP.org SVN deploy
+
+on:
+  workflow_call:
+    inputs:
+      plugin_slug:
+        type: string
+        required: false
+      build_dir:
+        type: string
+        required: false
+        default: "."
+    secrets:
+      WPORG_USERNAME:
+        required: true
+      WPORG_PASSWORD:
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve plugin slug
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -n "${{ inputs.plugin_slug }}" ]; then
+            echo "SLUG=${{ inputs.plugin_slug }}" >> "$GITHUB_ENV"
+          else
+            echo "SLUG=${{ github.event.repository.name }}" >> "$GITHUB_ENV"
+          fi
+
+      - name: Validate build dir
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ ! -d "${{ inputs.build_dir }}" ]; then
+            echo "BUILD_DIR does not exist: ${{ inputs.build_dir }}" >&2
+            exit 1
+          fi
+
+      - name: Deploy to WP.org SVN (10up)
+        uses: 10up/action-wordpress-plugin-deploy@stable
+        env:
+          SVN_USERNAME: ${{ secrets.WPORG_USERNAME }}
+          SVN_PASSWORD: ${{ secrets.WPORG_PASSWORD }}
+          SLUG: ${{ env.SLUG }}
+          BUILD_DIR: ${{ inputs.build_dir }}
