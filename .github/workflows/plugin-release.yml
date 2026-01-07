@@ -3,6 +3,10 @@ name: Plugin release (GitHub)
 on:
   workflow_call:
     inputs:
+      plugin_slug:
+        type: string
+        required: false
+        description: "Plugin slug for zip filename. Defaults to repository name."
       readme_path:
         type: string
         required: false
@@ -69,9 +73,40 @@ jobs:
           README_PATH: ${{ inputs.readme_path }}
           HEADING_RE: ${{ inputs.version_heading_regex }}
 
+      - name: Resolve plugin slug
+        run: |
+          if [ -n "${{ inputs.plugin_slug }}" ]; then
+            echo "SLUG=${{ inputs.plugin_slug }}" >> "$GITHUB_ENV"
+          else
+            echo "SLUG=${{ github.event.repository.name }}" >> "$GITHUB_ENV"
+          fi
+
+      - name: Build plugin zip
+        run: |
+          set -euo pipefail
+
+          TAG="${GITHUB_REF_NAME}"
+          PREFIX="${{ inputs.tag_prefix }}"
+          VER="${TAG#${PREFIX}}"
+
+          BUILD_DIR="${RUNNER_TEMP}/build"
+          mkdir -p "$BUILD_DIR/${SLUG}"
+
+          # Use .distignore if present, otherwise include everything
+          if [ -f .distignore ]; then
+            rsync -av --exclude-from=.distignore ./ "$BUILD_DIR/${SLUG}/"
+          else
+            rsync -av --exclude='.git' --exclude='.github' ./ "$BUILD_DIR/${SLUG}/"
+          fi
+
+          cd "$BUILD_DIR"
+          zip -r "${GITHUB_WORKSPACE}/${SLUG}.zip" "${SLUG}"
+          echo "Built ${SLUG}.zip"
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
           body_path: release-notes.md
           generate_release_notes: true
+          files: ${{ env.SLUG }}.zip
