@@ -60,16 +60,29 @@ jobs:
 
           text = readme_path.read_text(encoding="utf-8")
 
-          # find section under the version heading until next same-level heading
-          pat = re.compile(rf"{heading_re}\n(.*?)(?=^\s*###\s+|\Z)", re.M | re.S)
-          m = pat.search(text)
+          # Find version heading, then collect bullet lines until empty line or next heading
+          lines = text.split('\n')
+          heading_pat = re.compile(heading_re)
+          found = False
+          content_lines = []
 
-          if not m:
-            print(f"ERROR: Could not find changelog section for version {ver} in {readme_path}", file=sys.stderr)
-            print(f"Pattern used: {pat.pattern}", file=sys.stderr)
+          for line in lines:
+            if not found:
+              if heading_pat.match(line):
+                found = True
+              continue
+            # Stop at empty line, next heading, or end
+            if line.strip() == '' or re.match(r'^##', line):
+              break
+            content_lines.append(line)
+
+          if not found:
+            print(f"ERROR: Could not find changelog heading for version {ver} in {readme_path}", file=sys.stderr)
+            print(f"Pattern used: {heading_re}", file=sys.stderr)
             sys.exit(1)
 
-          notes = m.group(1).strip()
+          notes = '\n'.join(content_lines).strip()
+
           if not notes:
             print(f"WARNING: Matched heading but content is empty", file=sys.stderr)
 
