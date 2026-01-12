@@ -14,7 +14,7 @@ on:
       version_heading_regex:
         type: string
         required: false
-        default: "^###\\s+{VERSION}\\b.*$"
+        default: "^###\\s+v?{VERSION}\\b.*$"
       tag_prefix:
         type: string
         required: false
