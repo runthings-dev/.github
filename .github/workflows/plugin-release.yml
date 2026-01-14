@@ -41,10 +41,19 @@ jobs:
         run: |
           set -euo pipefail
 
-          if [ ! -f "$README_PATH" ]; then
-            echo "Missing file: ${README_PATH}" >&2
+          # Try case variations
+          if [ -f "$README_PATH" ]; then
+            ACTUAL_PATH="$README_PATH"
+          elif [ -f "README.md" ]; then
+            ACTUAL_PATH="README.md"
+          elif [ -f "readme.md" ]; then
+            ACTUAL_PATH="readme.md"
+          else
+            echo "Missing file: ${README_PATH} (also tried README.md, readme.md)" >&2
             exit 1
           fi
+
+          export ACTUAL_README_PATH="$ACTUAL_PATH"
 
           python - <<'PY'
           import os, re, sys, pathlib
@@ -52,7 +61,7 @@ jobs:
           tag = os.environ["TAG"]
           prefix = os.environ.get("TAG_PREFIX", "v")
           ver = tag[len(prefix):] if tag.startswith(prefix) else tag
-          readme_path = pathlib.Path(os.environ["README_PATH"])
+          readme_path = pathlib.Path(os.environ["ACTUAL_README_PATH"])
           heading_re = os.environ["HEADING_RE"].replace("{VERSION}", re.escape(ver))
 
           print(f"Tag: {tag}, Prefix: {prefix}, Version: {ver}")
