@@ -81,6 +81,7 @@ jobs:
             if not found:
               if heading_pat.match(line):
                 found = True
+                content_lines.append(line)
               continue
             # Stop at empty line, next heading, or end
             if line.strip() == '' or re.match(r'^##', line):
