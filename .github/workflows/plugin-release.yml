@@ -71,7 +71,7 @@ jobs:
 
           text = readme_path.read_text(encoding="utf-8")
 
-          # Find version heading, then collect bullet lines until empty line or next heading
+          # Find version heading, then collect lines until next ## heading
           lines = text.split('\n')
           heading_pat = re.compile(heading_re)
           found = False
@@ -83,8 +83,8 @@ jobs:
                 found = True
                 content_lines.append(line)
               continue
-            # Stop at empty line, next heading, or end
-            if line.strip() == '' or re.match(r'^##', line):
+            # Stop at next heading (## or ###)
+            if re.match(r'^##', line):
               break
             content_lines.append(line)
 
