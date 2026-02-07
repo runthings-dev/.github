@@ -40,11 +40,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if svn ls "https://plugins.svn.wordpress.org/${{ env.SLUG }}/" --depth empty >/dev/null 2>&1; then
-            echo "Plugin '${{ env.SLUG }}' found on WP.org SVN"
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://plugins.svn.wordpress.org/${{ env.SLUG }}/")
+          if [ "$HTTP_STATUS" = "200" ]; then
+            echo "Plugin '${{ env.SLUG }}' found on WP.org SVN (HTTP $HTTP_STATUS)"
             echo "exists=true" >> "$GITHUB_OUTPUT"
           else
-            echo "::warning::Plugin '${{ env.SLUG }}' not found on WP.org SVN - skipping deploy"
+            echo "::warning::Plugin '${{ env.SLUG }}' not found on WP.org SVN (HTTP $HTTP_STATUS) - skipping deploy"
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
 
