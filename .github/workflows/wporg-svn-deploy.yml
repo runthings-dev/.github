@@ -35,7 +35,21 @@ jobs:
             echo "SLUG=${{ github.event.repository.name }}" >> "$GITHUB_ENV"
           fi
 
+      - name: Check if plugin exists on WP.org
+        id: preflight
+        shell: bash
+        run: |
+          set -euo pipefail
+          if svn ls "https://plugins.svn.wordpress.org/${{ env.SLUG }}/" --depth empty >/dev/null 2>&1; then
+            echo "Plugin '${{ env.SLUG }}' found on WP.org SVN"
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::Plugin '${{ env.SLUG }}' not found on WP.org SVN - skipping deploy"
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Deploy to WP.org SVN (10up)
+        if: steps.preflight.outputs.exists == 'true'
         uses: 10up/action-wordpress-plugin-deploy@stable
         env:
           SVN_USERNAME: ${{ secrets.WPORG_USERNAME }}
